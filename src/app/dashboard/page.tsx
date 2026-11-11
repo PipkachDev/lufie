@@ -30,8 +30,8 @@ export default function DashboardPage() {
 
     async function loadGuilds() {
       try {
-        // @ts-ignore
-        const accessToken = session.accessToken;
+        // @ts-expect-error custom field
+        const accessToken = session.accessToken as string | undefined;
         if (!accessToken) {
           setError("Нет access token");
           setLoadingGuilds(false);
@@ -51,7 +51,6 @@ export default function DashboardPage() {
         const data: Guild[] = await res.json();
 
         // Фильтруем серверы, где пользователь админ или владелец
-        // (ADMINISTRATOR = 0x8, MANAGE_GUILD = 0x20)
         const manageable = data.filter((g) => {
           const perms = BigInt(g.permissions);
           const ADMIN = BigInt(0x8);
@@ -81,11 +80,19 @@ export default function DashboardPage() {
 
   if (!session) return null;
 
-  // @ts-ignore
-  const user = session.user;
-  const avatarUrl = user?.avatar
+  // Кастомные поля из Discord
+  const user = session.user as {
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+    id?: string;
+    username?: string;
+    avatar?: string | null;
+  };
+
+  const avatarUrl = user.avatar && user.id
     ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=128`
-    : `https://cdn.discordapp.com/embed/avatars/0.png`;
+    : user.image || `https://cdn.discordapp.com/embed/avatars/0.png`;
 
   return (
     <main className="min-h-screen">
@@ -107,7 +114,7 @@ export default function DashboardPage() {
                 className="w-8 h-8 rounded-full"
               />
               <span className="text-sm text-slate-300 hidden sm:inline">
-                {user?.username || user?.name}
+                {user.username || user.name}
               </span>
             </div>
             <button
